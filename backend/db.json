@@ -1,5 +1,1 @@
-{
-"doctors": {"1": {"first_name": "Jeff", "last_name": "Appleseed"}, "2" :{"first_name": "Johanna", "last_name": "Applebaum"}},
-"patients": {"1": {"first_name": "Jefferson", "last_name": "Startship"}},
-"appointments": [{"id": 1, "doctor_id": "2", "patient": 1, "day": "2021-07-11", "time": "8:15", "kind": "Follow-Up"}]
-}
+{"doctors":{"1":{"first_name":"Jeff","last_name":"Appleseed"},"2":{"first_name":"Johanna","last_name":"Applebaum"}},"patients":{"1":{"first_name":"Jefferson","last_name":"Starship"}},"appointments":{"1":{"doctor_id":"2","patient_id":1,"day":"2021-07-11","time":"8:15","kind":"Follow-Up"},"2":{"doctor_id":"2","patient_id":"1","day":"2021-07-12","time":"8:15","kind":"Follow-Up"}},"appointments_by_day":{"2021-07-11":["1"]},"appointments_curr_max_id":1,"data_is_checked_out":0}
