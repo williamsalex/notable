@@ -7,7 +7,7 @@ const port = 5000
 
 app.get('/doctors', (req, res) => {
 
-  // Read from json file and send back object
+  // Read from json file and send back data on doctors
 
   let data = fs.readFileSync('./db.json', 'utf8')
   let doctors = JSON.parse(data).doctors
@@ -18,7 +18,7 @@ app.get('/doctors', (req, res) => {
 
 app.get('/patients', (req, res) => {
 
-  // Read from json file and send back object
+  // Read from json file and send back data on patients
 
   let data = fs.readFileSync('./db.json', 'utf8')
   let patients = JSON.parse(data).patients
@@ -35,7 +35,7 @@ app.get('/appointments/:doctorId/:day', (req, res) => {
   let data = fs.readFileSync('./db.json', 'utf8')
   let appointments = JSON.parse(data).appointments
 
-  Object.keys(appointments).forEach((id) => console.log(appointments[id].day, day, appointments[id].doctor_id, appointments[id].day === day, appointments[id].doctor_id === doctorId))
+  // Finding the appointment using the day hash and getting its data
 
   let appointmentsOnDay = Object.keys(appointments).filter((id) => appointments[id].day === day && appointments[id].doctor_id === doctorId)
   appointmentsOnDay = appointmentsOnDay.map((apt) => appointments[apt])
@@ -56,7 +56,17 @@ app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', async (req, 
 
   if (parseInt(time.split(':')[1]) % 15 !== 0) { res.sendStatus(422) }
 
-  await checkOutFile()
+  try {
+
+    let notExpired = await checkOutFile()
+
+    if (!notExpired) { res.sendStatus(500) }
+
+  } catch (err) {
+
+    res.sendStatus(500)
+
+  }
 
   let data = fs.readFileSync('./db.json', 'utf8')
 
@@ -92,7 +102,7 @@ app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', async (req, 
 
   currentState.appointments[appointmentId] = {"doctor_id": doctorId, "patient_id": patientId, "day": day, "time": time, "kind": kind}
   
-  // Adding to day index
+  // Adding to day hash
 
   if (appointmentsByDay) {
 
@@ -115,7 +125,19 @@ app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', async (req, 
 
 app.delete('/appointments/:id', async (req, res) => {
 
-  await checkOutFile()
+  // Checking that the file is not currently in use
+
+  try {
+
+    let notExpired = await checkOutFile()
+
+    if (!notExpired) { res.sendStatus(500) }
+
+  } catch (err) {
+
+    res.sendStatus(500)
+
+  }
 
   let appointmentId = req.params.id
 
@@ -143,15 +165,20 @@ app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
 
+
 async function checkOutFile () {
 
   // This is bad semaphore and I would make it more robust if I had time
 
   let goAhead = false
+  let count = 0
+  let data
+
+  // Checking if the file is checked out every 10 ms and after 5000ms terminating
 
   while (!goAhead) {
 
-    let data = JSON.parse(fs.readFileSync('./db.json', 'utf8'))
+    data = JSON.parse(fs.readFileSync('./db.json', 'utf8'))
     
     if (data.data_is_checked_out === 0) {
 
@@ -161,9 +188,15 @@ async function checkOutFile () {
 
       goAhead = true
 
+      return true
+
     }
 
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    count ++
+
+    if (count > 500) { return false }
 
   }
 
