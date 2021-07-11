@@ -5,23 +5,48 @@ const cors = require('cors')
 app.use(cors({credentials: true, origin: true}))
 const port = 5000
 
-app.get('/', (req, res) => {
+app.get('/doctors', (req, res) => {
 
   // Read from json file and send back object
 
   let data = fs.readFileSync('./db.json', 'utf8')
-  let currCount = JSON.parse(data)
+  let doctors = JSON.parse(data).doctors
 
-  res.send(currCount)
+  res.send(doctors)
 
 })
 
-app.post('/', (req, res) => {
+app.get('/patients', (req, res) => {
+
+  // Read from json file and send back object
+
+  let data = fs.readFileSync('./db.json', 'utf8')
+  let patients = JSON.parse(data).patients
+
+  res.send(patients)
+
+})
+
+app.get('/appointments/:doctorId/:day', (req, res) => {
+  
+  let doctorId = req.params.doctorId
+  let day = req.params.day
+
+  let data = fs.readFileSync('./db.json', 'utf8')
+  let appointments = JSON.parse(data).appointments
+
+  appointments = appointments.filter((apt) => apt.day === day && apt.doctor_id === doctorId)
+
+  res.send(appointments)
+
+})
+
+app.post('/appointments/new/:doctorId/:day/:time', (req, res) => {
 
   let data = fs.readFileSync('./db.json', 'utf8')
   let currCount
 
-  // If the file is just starting, initialize at 0
+  // If the file is just starting, initialize at 0, and increment to one
 
   if (data === '') {
 

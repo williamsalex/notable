@@ -1,1 +1,5 @@
-{"clicks":25}
+{
+"doctors": {"1": {"first_name": "Jeff", "last_name": "Appleseed"}, "2" :{"first_name": "Johanna", "last_name": "Applebaum"}},
+"patients": {"1": {"first_name": "Jefferson", "last_name": "Startship"}},
+"appointments": [{"id": 1, "doctor_id": "2", "patient": 1, "day": "2021-07-11", "time": "8:15", "kind": "Follow-Up"}]
+}
