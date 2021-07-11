@@ -80,24 +80,52 @@ app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', (req, res) =
 
   if (appointmentsAtDesiredTime > 2) { res.sendStatus(422) }
 
-  // This is horrible but fast - need to at least implement a semaphore
+  // This is a horrible but fast way of creating ids - need to at least implement a semaphore for race conditions
 
   let appointmentId = currentState.appointments_curr_max_id + 1
 
+  while (appointmentId in currentState.appointments) { appointmentId += 1 }
+
   currentState.appointments[appointmentId] = {"doctor_id": doctorId, "patient_id": patientId, "day": day, "time": time, "kind": kind}
+  
+  // Adding to day index
+
+  if (appointmentsByDay) {
+
+    currentState.appointments_by_day[day][appointmentId] = "1"
+
+  } else {
+
+    currentState.appointments_by_day[day] = [appointmentId]
+
+  }
+
+  currentState.appointments_curr_max_id = appointmentId
 
   fs.writeFileSync('./db.json', JSON.stringify(currentState))
   res.sendStatus(200)
 
 })
 
-app.delete('appointments/:id', (req, res) => {
+app.delete('/appointments/:id', (req, res) => {
 
   let appointmentId = req.params.id
 
   let data = fs.readFileSync('./db.json', 'utf8')
 
   let currentState = JSON.parse(data)
+
+  let appointmentExists = currentState.appointments[appointmentId]
+
+  if (!appointmentExists) { res.sendStatus(422) }
+
+  let day = currentState.appointments[appointmentId].day
+
+  delete currentState.appointments[appointmentId]
+  delete currentState.appointments_by_day[day][appointmentId]
+
+  fs.writeFileSync('./db.json', JSON.stringify(currentState))
+  res.sendStatus(200)
 
 })
 
