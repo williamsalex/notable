@@ -35,6 +35,8 @@ app.get('/appointments/:doctorId/:day', (req, res) => {
   let data = fs.readFileSync('./db.json', 'utf8')
   let appointments = JSON.parse(data).appointments
 
+  Object.keys(appointments).forEach((id) => console.log(appointments[id].day, day, appointments[id].doctor_id, appointments[id].day === day, appointments[id].doctor_id === doctorId))
+
   let appointmentsOnDay = Object.keys(appointments).filter((id) => appointments[id].day === day && appointments[id].doctor_id === doctorId)
   appointmentsOnDay = appointmentsOnDay.map((apt) => appointments[apt])
 
@@ -42,7 +44,7 @@ app.get('/appointments/:doctorId/:day', (req, res) => {
 
 })
 
-app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', (req, res) => {
+app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', async (req, res) => {
 
   let doctorId = req.params.doctorId
   let patientId = req.params.patientId
@@ -53,6 +55,8 @@ app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', (req, res) =
   // Checking if the appointment is on a 15 minute interval before we load the database
 
   if (parseInt(time.split(':')[1]) % 15 !== 0) { res.sendStatus(422) }
+
+  await checkOutFile()
 
   let data = fs.readFileSync('./db.json', 'utf8')
 
@@ -102,12 +106,16 @@ app.post('/appointments/new/:doctorId/:patientId/:day/:time/:kind', (req, res) =
 
   currentState.appointments_curr_max_id = appointmentId
 
+  currentState.data_is_checked_out = 0
+
   fs.writeFileSync('./db.json', JSON.stringify(currentState))
   res.sendStatus(200)
 
 })
 
-app.delete('/appointments/:id', (req, res) => {
+app.delete('/appointments/:id', async (req, res) => {
+
+  await checkOutFile()
 
   let appointmentId = req.params.id
 
@@ -123,6 +131,8 @@ app.delete('/appointments/:id', (req, res) => {
 
   delete currentState.appointments[appointmentId]
   delete currentState.appointments_by_day[day][appointmentId]
+  
+  currentState.data_is_checked_out = 0
 
   fs.writeFileSync('./db.json', JSON.stringify(currentState))
   res.sendStatus(200)
@@ -132,3 +142,29 @@ app.delete('/appointments/:id', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
+
+async function checkOutFile () {
+
+  // This is bad semaphore and I would make it more robust if I had time
+
+  let goAhead = false
+
+  while (!goAhead) {
+
+    let data = JSON.parse(fs.readFileSync('./db.json', 'utf8'))
+    
+    if (data.data_is_checked_out === 0) {
+
+      data.data_is_checked_out = 1
+
+      fs.writeFileSync('./db.json', JSON.stringify(data))
+
+      goAhead = true
+
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+  }
+
+}
